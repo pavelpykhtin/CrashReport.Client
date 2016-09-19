@@ -14,8 +14,8 @@ namespace CrashReport.Client
 			_settings = settings;
 
 			_sender = _settings.IsAsync
-				? (ISender)new AsyncSender(_settings.ApplicationKey, _settings.Url)
-				: new SyncSender(_settings.ApplicationKey, _settings.Url);
+				? (ISender)new AsyncSender(_settings.ApplicationKey, _settings.Urls)
+				: new SyncSender(_settings.ApplicationKey, _settings.Urls);
 		}
 
 		public void Log(Message message)

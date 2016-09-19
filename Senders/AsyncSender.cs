@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
@@ -8,20 +9,25 @@ namespace CrashReport.Client.Senders
 	public class AsyncSender: ISender
 	{
 		private readonly TaskFactory _taskFactory;
+		private readonly FallbackUrlCollection _urls;
 
 		public string ApplicationKey { get; set; }
-		public string Url { get; set; }
 
-		public AsyncSender(string applicationKey, string url)
+		public AsyncSender(string applicationKey, IEnumerable<string> urls)
 		{
 			ApplicationKey = applicationKey;
-			Url = url;
+			_urls = new FallbackUrlCollection(urls);
 			_taskFactory = new TaskFactory();
 		}
 
 		public void Send(Message message)
 		{
-			var url = $"{Url}/api/{ApplicationKey}/log";
+			Send(message, 0);
+		}
+
+		private void Send(Message message, int fallbackStep)
+		{
+			var url = $"{_urls.Current}/api/{ApplicationKey}/log";
 
 			var request = (HttpWebRequest)WebRequest.Create(url);
 			request.Method = "POST";
@@ -32,19 +38,29 @@ namespace CrashReport.Client.Senders
 				.FromAsync<Stream>(request.BeginGetRequestStream, request.EndGetRequestStream, null, TaskCreationOptions.None)
 				.ContinueWith(task =>
 				{
-					using (var stream = task.Result)
+					try
 					{
-						using (var writer = new StreamWriter(stream))
+						using (var stream = task.Result)
 						{
-							var serializer = new JsonSerializer();
+							using (var writer = new StreamWriter(stream))
+							{
+								var serializer = new JsonSerializer();
 
-							serializer.Serialize(writer, message);
+								serializer.Serialize(writer, message);
+							}
+
+							stream.Close();
 						}
 
-						stream.Close();
+						request.GetResponse();
 					}
-
-					request.GetResponse();
+					catch
+					{
+						if (_urls.SwitchUrl(fallbackStep))
+							Send(message, fallbackStep + 1);
+						else
+							throw;
+					}
 				});
 		}
 	}

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json;
@@ -6,36 +8,51 @@ namespace CrashReport.Client.Senders
 {
 	public class SyncSender: ISender
 	{
+		private readonly FallbackUrlCollection _urls;
 		public string ApplicationKey { get; set; }
-		public string Url { get; set; }
 
-		public SyncSender(string applicationKey, string url)
+		public SyncSender(string applicationKey, IEnumerable<string> urls)
 		{
 			ApplicationKey = applicationKey;
-			Url = url;
+			_urls = new FallbackUrlCollection(urls);
 		}
 
 		public void Send(Message message)
 		{
-			var url = $"{Url}/api/{ApplicationKey}/log";
+			Send(message, 0);
+		}
+
+		public void Send(Message message, int fallbackStep)
+		{
+			var url = $"{_urls.Current}/api/{ApplicationKey}/log";
 
 			var request = (HttpWebRequest)WebRequest.Create(url);
 			request.Method = "POST";
 			request.ContentType = "application/json";
 			request.ServicePoint.Expect100Continue = false;
 
-			using (var stream = request.GetRequestStream())
+			try
 			{
-				using (var writer = new StreamWriter(stream))
+				using (var stream = request.GetRequestStream())
 				{
-					var serializer = new JsonSerializer();
+					using (var writer = new StreamWriter(stream))
+					{
+						var serializer = new JsonSerializer();
 
-					serializer.Serialize(writer, message);
+						serializer.Serialize(writer, message);
+					}
+
+					stream.Close();
 				}
-
-				stream.Close();
+				request.GetResponse();
 			}
-			request.GetResponse();
+			catch
+			{
+				if (_urls.SwitchUrl(fallbackStep))
+					Send(message, fallbackStep + 1);
+				else
+					throw;
+			}
 		}
 	}
 }

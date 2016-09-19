@@ -54,6 +54,7 @@
     <Compile Include="NLogTarget.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Senders\AsyncSender.cs" />
+    <Compile Include="Senders\FallbackUrlCollection.cs" />
     <Compile Include="Senders\SyncSender.cs" />
     <Compile Include="TypeExtension.cs" />
   </ItemGroup>

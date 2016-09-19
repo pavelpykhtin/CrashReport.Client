@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Config;
@@ -35,13 +36,21 @@ namespace CrashReport.Client
 		{
 			base.InitializeTarget();
 
+			var urlList = string.IsNullOrWhiteSpace(Url) 
+				? Enumerable.Empty<string>() 
+				: Url.Split(';');
+
+			urlList = urlList
+				.Where(x => !string.IsNullOrWhiteSpace(x))
+				.ToArray();
+
 			_logger = new Logger(new LoggerSettings
 			{
 				ApplicationKey = ApplicationKey,
 				Version = !string.IsNullOrEmpty(Version) 
 					? new Version(Version) 
 					: Type.GetType(VersionFromType)?.Assembly.GetName().Version,
-				Url = Url,
+				Urls = urlList,
 				IsAsync = IsAsync
 			});
 		}

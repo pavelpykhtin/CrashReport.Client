@@ -39,8 +39,8 @@ _logger.Fatal(message);
 ## Configuration options:
 |Option     |Required   |Description                                            |
 |-----------|:---------:|-----------                                            |
-|**Url**                |Yes        |Url of the reporting service               |
-|**ApplicationKey**     |Yes        |Key that identifies your application in the system  |
+|**Url**                |Yes        |List of the reporting service's urls separated by semicolons           |
+|**ApplicationKey**     |Yes        |Key that identifies your application in the system                     |
 |**Version**            |No         |Version of the application in the format 'major.minor.revision.build'  |
 |**VersionFromType**    |No         |Full name of the type which is located in the assembly whose version should be used as version of the application. Usually it's the Application class (like program or MvcApplication). <br>This parameter is used if **Version** option was not specified. In case if both **Version** and **VersionFromType** were specified value of **Version** is used|
 |**IsAsync**            |No         |Use async reporting. When enabled application will not wait until the message will be sent to the reporting service. Default value: **True**   |
@@ -62,4 +62,14 @@ logger.Fatal(e, message, 42, "John");
 Will be serialized into:
 ```json
 [42, "John"]
+```
+
+### Fallback Urls
+You can specify list of urls separating them with semicolon. If logger won't be able to send message to the first url it will try to send it to the second, third and etc.
+```xml
+<target name="crashReport" type="CrashReport"
+		layout="${Message}"
+		VersionFromType="MyApplication.Program, MyApplication"
+		ApplicationKey="your-application-key"
+		Url="https://crashreport.collector.com;https://crashreport.collector2.com;https://crashreport.collector3.com" />
 ```

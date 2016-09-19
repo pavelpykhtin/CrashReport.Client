@@ -11,5 +11,6 @@
     <releaseNotes></releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>CrashReport</tags>
+    <projectUrl>https://github.com/pavelpykhtin/CrashReport.Client</projectUrl>
   </metadata>
 </package>
